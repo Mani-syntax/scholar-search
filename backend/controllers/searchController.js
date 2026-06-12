@@ -17,7 +17,11 @@ const getSearchResults = async (req, res) => {
 
         // 1. Check Cache if DB is connected
         if (isDbConnected) {
-            cachedPapers = await Paper.find({ searchQuery: q.toLowerCase() });
+            try {
+                cachedPapers = await Paper.find({ searchQuery: q.toLowerCase() });
+            } catch (dbError) {
+                console.error('DB Find Error, skipping cache:', dbError.message);
+            }
         }
 
         if (cachedPapers.length === 0) {
