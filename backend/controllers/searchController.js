@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const Paper = require('../models/Paper');
 const { searchOpenAlex } = require('../services/openalex');
 const { searchSemanticScholar } = require('../services/semanticScholar');
-const { calculateSimilarity } = require('../services/similarity');
+const { calculateSimilarity, tokenize } = require('../services/similarity');
 
 const getSearchResults = async (req, res) => {
     const { q, year, type, source, isFree, searchType } = req.query;
@@ -29,7 +29,7 @@ const getSearchResults = async (req, res) => {
             const [openAlexResults, semanticScholarResults, crossRefResults] = await Promise.all([
                 searchOpenAlex(q, process.env.OPENALEX_EMAIL, searchType),
                 searchSemanticScholar(q, process.env.SEMANTIC_SCHOLAR_API_KEY),
-                searchCrossRef(q)
+                searchCrossRef(q, searchType)
             ]);
 
             const allResults = [...openAlexResults, ...semanticScholarResults, ...crossRefResults];
@@ -57,6 +57,13 @@ const getSearchResults = async (req, res) => {
 
         // 4. Filter Results
         let filteredResults = cachedPapers;
+
+        if (searchType === 'author') {
+            const qLower = q.toLowerCase();
+            filteredResults = filteredResults.filter(p => 
+                p.authors && p.authors.some(a => a.name && a.name.toLowerCase().includes(qLower))
+            );
+        }
 
         if (year) {
             filteredResults = filteredResults.filter(p => p.year === parseInt(year));
@@ -102,7 +109,11 @@ const getSimilarityResults = async (req, res) => {
 
     try {
         // Extract key terms from the content for searching
-        const searchTerms = content.trim().split(/\s+/).slice(0, 8).join(' ');
+        const tokens = tokenize(content);
+        if (tokens.length === 0) {
+            return res.status(400).json({ error: 'Content does not contain enough meaningful words' });
+        }
+        const searchTerms = tokens.slice(0, 8).join(' ');
 
         // Fetch papers using the extracted terms
         const [openAlexResults, semanticScholarResults] = await Promise.all([
@@ -113,7 +124,10 @@ const getSimilarityResults = async (req, res) => {
         const allResults = [...openAlexResults, ...semanticScholarResults];
 
         // Calculate similarity scores
-        const scoredResults = calculateSimilarity(content, allResults);
+        let scoredResults = calculateSimilarity(content, allResults);
+        
+        // Filter out zero similarity to ensure high accuracy
+        scoredResults = scoredResults.filter(r => r.similarityScore > 0);
 
         res.json(scoredResults);
     } catch (error) {

@@ -1,8 +1,11 @@
 const axios = require('axios');
 
-const searchCrossRef = async (query) => {
+const searchCrossRef = async (query, searchType) => {
     try {
-        const response = await axios.get(`https://api.crossref.org/works?query=${encodeURIComponent(query)}&rows=15`);
+        const queryParam = searchType === 'author' 
+            ? `query.author=${encodeURIComponent(query)}` 
+            : `query=${encodeURIComponent(query)}`;
+        const response = await axios.get(`https://api.crossref.org/works?${queryParam}&rows=15`);
         if (!response.data || !response.data.message || !response.data.message.items) return [];
 
         const items = response.data.message.items;

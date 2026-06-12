@@ -8,7 +8,7 @@ function deduplicatePapers(papers) {
   papers.forEach(paper => {
     // Generate a unique key: DOI (normalized) or lowercase title
     const doiKey = paper.doi ? paper.doi.toLowerCase().replace(/https?:\/\/doi\.org\//, '').trim() : null;
-    const titleKey = paper.title.toLowerCase().replace(/[^\w]/g, '').trim();
+    const titleKey = (paper.title || 'Unknown Title').toLowerCase().replace(/[^\w]/g, '').trim();
     const key = doiKey || titleKey;
 
     if (paperMap.has(key)) {
