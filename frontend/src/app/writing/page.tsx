@@ -39,7 +39,7 @@ export default function WritingPage() {
             const result = await getWritingAssist(type, inputText);
             setOutput(result);
         } catch {
-            setOutput('Failed to generate. Please ensure your backend is running and OPENAI_API_KEY is set.');
+            setOutput('Failed to generate. Please try again in a moment.');
         } finally { setLoading(false); }
     };
 
