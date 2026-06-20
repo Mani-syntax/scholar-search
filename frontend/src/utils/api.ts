@@ -1,4 +1,7 @@
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+// Keep the API on the same Vercel deployment by default.  A relative URL works
+// in production and in local development, while an explicit URL can still be
+// supplied when a separate backend is intentionally deployed.
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
 
 export type SearchType = 'topic' | 'author' | 'content';
 
